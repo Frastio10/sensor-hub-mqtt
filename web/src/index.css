@@ -1,0 +1,59 @@
+:root {
+  --bg: #0b0c0e;
+  --bg-2: #101216;
+  --ink: #ece9e3;
+  --muted: #8a857c;
+  --dim: #565249;
+  --line: rgba(236, 233, 227, 0.08);
+  --line-2: rgba(236, 233, 227, 0.18);
+  --signal: #ff5a26;
+  --bad: #e0606a;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --cond: "IBM Plex Sans Condensed", var(--mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--bg);
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(236, 233, 227, 0.05) 1px,
+    transparent 0
+  );
+  background-size: 24px 24px;
+  color: var(--ink);
+  font-family: var(--mono);
+  -webkit-font-smoothing: antialiased;
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 380px at 78% -12%, rgba(255, 90, 38, 0.12), transparent 70%),
+    radial-gradient(1200px 600px at 50% 120%, rgba(255, 90, 38, 0.04), transparent 70%);
+}
+
+.scrim::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.16) 0 1px,
+    transparent 1px 3px
+  );
+  opacity: 0.4;
+  mix-blend-mode: multiply;
+}
