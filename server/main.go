@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -20,6 +21,7 @@ type Device struct {
 	MAC      string `json:"mac"`
 	IP       string `json:"ip"`
 	SSID     string `json:"ssid"`
+	Online   bool   `json:"online"`
 }
 
 var (
@@ -32,7 +34,6 @@ var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 
 	if token := client.Subscribe(topic, 0, onMessageReceived); token.Wait() && token.Error() != nil {
 		panic(token.Error())
-
 	}
 }
 
@@ -42,19 +43,41 @@ var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err
 
 func onMessageReceived(client mqtt.Client, message mqtt.Message) {
 	fmt.Printf("Received message on topic: %s\nMessage: %s\n", message.Topic(), message.Payload())
+	parts := strings.Split(message.Topic(), "/")
+	id := parts[1]
+	category := parts[2]
 
-	var device Device
-	err := json.Unmarshal(message.Payload(), &device)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
+	fmt.Println(parts)
 
 	mu.Lock()
-	devices[device.DeviceID] = &device
-	mu.Unlock()
+	device, ok := devices[id]
+	if !ok {
+		device = &Device{DeviceID: id}
+		devices[id] = device
+	}
 
-	fmt.Printf("Parsed Struct: %+v\n", device)
+	switch category {
+	case "status":
+		var status struct {
+			Status int `json:"status"`
+		}
+
+		err := json.Unmarshal(message.Payload(), &status)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+
+		device.Online = status.Status != 0
+
+	case "info":
+		var info Device
+		if err := json.Unmarshal(message.Payload(), &info); err == nil {
+			device.MAC, device.IP, device.SSID = info.MAC, info.IP, info.SSID
+		}
+	}
+
+	mu.Unlock()
 }
 
 func devicesHandler(w http.ResponseWriter, r *http.Request) {

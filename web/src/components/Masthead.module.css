@@ -1,0 +1,123 @@
+.masthead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.mark {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.glyph {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+.glyph span {
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+}
+
+.glyph span:first-child {
+  background: var(--signal);
+  border-color: var(--signal);
+}
+
+.title h1 {
+  margin: 0;
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: clamp(1.7rem, 4vw, 2.5rem);
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+.title h1 em {
+  color: var(--signal);
+  font-style: normal;
+}
+
+.title p {
+  margin: 0.55rem 0 0;
+  font-size: 0.64rem;
+  letter-spacing: 0.3em;
+  color: var(--muted);
+}
+
+.readout {
+  display: flex;
+  align-items: center;
+  gap: 1.6rem;
+}
+
+.signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  border: 1px solid var(--line-2);
+  border-radius: 2px;
+}
+
+.bulb {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--signal);
+  box-shadow: 0 0 10px var(--signal);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.dead {
+  color: var(--bad);
+  border-color: rgba(224, 96, 106, 0.3);
+}
+
+.dead .bulb {
+  background: var(--bad);
+  box-shadow: none;
+  animation: none;
+}
+
+.count {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.count strong {
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: clamp(2.2rem, 6vw, 3rem);
+  line-height: 0.82;
+  color: var(--signal);
+  font-variant-numeric: tabular-nums;
+  transition: text-shadow 0.3s ease;
+}
+
+.count strong.ticking {
+  text-shadow: 0 0 18px var(--signal);
+}
+
+.count span {
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bulb {
+    animation: none;
+  }
+}

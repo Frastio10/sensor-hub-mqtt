@@ -9,3 +9,10 @@ menu "Wi-Fi Configuration"
         help
             Password of the Wi-Fi network you want to connect to.
 endmenu
+
+menu "MQTT Configuration"
+    config MQTT_BROKER_URI
+        string "MQTT Broker URI"
+        help
+            Full URI of the MQTT broker the device connects to.
+endmenu

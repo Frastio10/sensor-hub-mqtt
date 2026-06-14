@@ -1,25 +1,15 @@
 import { useEffect, useState } from 'react'
-import './App.css'
+import { DeviceCard } from './components/DeviceCard'
+import { Masthead } from './components/Masthead'
+import { Ruler } from './components/Ruler'
+import type { Device } from './types'
+import styles from './App.module.css'
 
 const API = 'http://localhost:8080/api/devices'
 
-type Device = {
-  device_id: string
-  mac: string
-  ip: string
-  ssid: string
-}
-
-const pad = (n: number) => n.toString().padStart(2, '0')
-
-function clock(d: Date | null) {
-  if (!d) return '--:--:--'
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-}
-
 export default function App() {
   const [devices, setDevices] = useState<Device[]>([])
-  const [online, setOnline] = useState(false)
+  const [serverOnline, setServerOnline] = useState(false)
   const [lastSync, setLastSync] = useState<Date | null>(null)
 
   useEffect(() => {
@@ -32,10 +22,10 @@ export default function App() {
         const data: Device[] = await res.json()
         if (!active) return
         setDevices(data)
-        setOnline(true)
+        setServerOnline(true)
         setLastSync(new Date())
       } catch {
-        if (active) setOnline(false)
+        if (active) setServerOnline(false)
       }
     }
 
@@ -47,89 +37,31 @@ export default function App() {
     }
   }, [])
 
+  const sorted = [...devices].sort((a, b) =>
+    a.device_id.localeCompare(b.device_id),
+  )
+  const onlineCount = devices.filter((d) => d.online).length
+
   return (
     <>
       <div className="scrim" />
-      <div className="hub">
-        <header className="masthead">
-          <div className="mark">
-            <div className="glyph">
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className="title">
-              <h1>
-                SENSOR<em>/</em>HUB
-              </h1>
-              <p>ESP32 · MQTT TELEMETRY GATEWAY</p>
-            </div>
-          </div>
+      <div className={styles.hub}>
+        <Masthead serverOnline={serverOnline} onlineCount={onlineCount} />
+        <Ruler lastSync={lastSync} />
 
-          <div className="readout">
-            <div className={`signal ${online ? 'live' : 'dead'}`}>
-              <span className="bulb" />
-              {online ? 'LIVE' : 'NO SIGNAL'}
-            </div>
-            <div className="count">
-              <strong>{pad(devices.length)}</strong>
-              <span>
-                NODES
-                <br />
-                ONLINE
-              </span>
-            </div>
-          </div>
-        </header>
-
-        <div className="ruler">
-          <span className="sync">
-            SYNC {clock(lastSync)}
-            <i className="caret" />
-          </span>
-        </div>
-
-        {devices.length === 0 ? (
-          <div className="void">
-            <span className="void-mark" />
-            {online ? 'NO NODES BROADCASTING' : 'AWAITING SERVER LINK'}
+        {sorted.length === 0 ? (
+          <div className={styles.void}>
+            <span className={styles.voidMark} />
+            {serverOnline ? 'NO NODES BROADCASTING' : 'AWAITING SERVER LINK'}
           </div>
         ) : (
-          <main className="rack">
-            {devices.map((d, i) => (
-              <Node key={d.device_id} device={d} index={i} />
+          <main className={styles.rack}>
+            {sorted.map((d, i) => (
+              <DeviceCard key={d.device_id} device={d} index={i} />
             ))}
           </main>
         )}
       </div>
     </>
-  )
-}
-
-function Node({ device, index }: { device: Device; index: number }) {
-  return (
-    <article className="node" style={{ animationDelay: `${index * 60}ms` }}>
-      <div className="node-top">
-        <span className="ch">CH {pad(index + 1)}</span>
-        <span className="pulse" />
-      </div>
-      <h2 className="id">{device.device_id}</h2>
-      <dl className="specs">
-        <Row k="IPV4" v={device.ip} />
-        <Row k="SSID" v={device.ssid} />
-        <Row k="MAC" v={device.mac} />
-      </dl>
-    </article>
-  )
-}
-
-function Row({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="row">
-      <dt>{k}</dt>
-      <span className="lead" />
-      <dd>{v || '—'}</dd>
-    </div>
   )
 }

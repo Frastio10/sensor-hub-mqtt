@@ -1,0 +1,149 @@
+.node {
+  position: relative;
+  padding: 1.35rem 1.45rem 1.55rem;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  animation: rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.node:hover {
+  border-color: var(--line-2);
+  transform: translateY(-2px);
+}
+
+.node::before,
+.node::after {
+  content: "";
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.node::before {
+  top: 8px;
+  left: 8px;
+  border-top-color: var(--line-2);
+  border-left-color: var(--line-2);
+}
+
+.node::after {
+  right: 8px;
+  bottom: 8px;
+  border-right-color: var(--line-2);
+  border-bottom-color: var(--line-2);
+}
+
+.node:hover::before,
+.node:hover::after {
+  border-color: var(--signal);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
+}
+
+.ch {
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: var(--signal);
+}
+
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+.pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--signal);
+  box-shadow: 0 0 8px var(--signal);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.id {
+  margin: 0 0 1.15rem;
+  font-weight: 600;
+  font-size: 0.97rem;
+  letter-spacing: -0.01em;
+  word-break: break-all;
+}
+
+.specs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.row dt {
+  flex-shrink: 0;
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+}
+
+.lead {
+  flex: 1;
+  transform: translateY(-3px);
+  border-bottom: 1px dotted var(--line-2);
+}
+
+.row dd {
+  max-width: 62%;
+  margin: 0;
+  font-size: 0.79rem;
+  text-align: right;
+  word-break: break-all;
+}
+
+.offline {
+  opacity: 0.5;
+}
+
+.offline .ch {
+  color: var(--muted);
+}
+
+.offline .state {
+  color: var(--bad);
+}
+
+.offline .pulse {
+  background: var(--bad);
+  box-shadow: none;
+  animation: none;
+}
+
+.offline:hover::before,
+.offline:hover::after {
+  border-color: var(--bad);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .node {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .pulse {
+    animation: none;
+  }
+}

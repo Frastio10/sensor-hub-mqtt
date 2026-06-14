@@ -36,6 +36,16 @@ void get_device_id(char *device_id, size_t size) {
            mac[2], mac[3], mac[4], mac[5]);
 }
 
+void create_device_status_json(char *status_str, int status) {
+  cJSON *status_root = cJSON_CreateObject();
+  cJSON_AddNumberToObject(status_root, "status", status);
+  char *json = cJSON_PrintUnformatted(status_root);
+  strcpy(status_str, json);
+
+  free(json);
+  cJSON_Delete(status_root);
+}
+
 void mqtt_event_handler(void *event_handler_arg, esp_event_base_t event_base,
                         int32_t event_id, void *event_data) {
 
@@ -44,6 +54,16 @@ void mqtt_event_handler(void *event_handler_arg, esp_event_base_t event_base,
   switch ((esp_mqtt_event_id_t)event_id) {
   case MQTT_EVENT_CONNECTED: {
     ESP_LOGI("MQTT", "Connected to broker");
+
+    char status_json[64];
+    create_device_status_json(status_json, 1);
+
+    char status_topic[64];
+    snprintf(status_topic, sizeof(status_topic), "devices/%s/status",
+             device_id);
+
+    esp_mqtt_client_publish(mqtt_client_handle, status_topic, status_json, 0, 0,
+                            1);
 
     char topic[64];
     snprintf(topic, sizeof(topic), "devices/%s/info", device_id);
@@ -78,9 +98,20 @@ void mqtt_event_handler(void *event_handler_arg, esp_event_base_t event_base,
 }
 
 void setup_mqtt() {
+  char status_json[64];
+  create_device_status_json(status_json, 0);
+
+  char status_topic[64];
+  snprintf(status_topic, sizeof(status_topic), "devices/%s/status", device_id);
+
   const esp_mqtt_client_config_t mqtt_cfg = {
-      .broker.address.uri = "mqtt://192.168.1.20:1883",
-  };
+      .broker.address.uri = CONFIG_MQTT_BROKER_URI,
+      .session.keepalive = 10,
+      .session.last_will = {.topic = status_topic,
+                            .msg = status_json,
+                            .msg_len = 0,
+                            .qos = 1,
+                            .retain = true}};
 
   mqtt_client_handle = esp_mqtt_client_init(&mqtt_cfg);
   esp_mqtt_client_register_event(mqtt_client_handle, ESP_EVENT_ANY_ID,
