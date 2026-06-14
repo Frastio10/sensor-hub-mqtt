@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -22,11 +23,14 @@ type Device struct {
 	IP       string `json:"ip"`
 	SSID     string `json:"ssid"`
 	Online   bool   `json:"online"`
+
+	States map[string]int `json:"states"`
 }
 
 var (
-	devices = make(map[string]*Device)
-	mu      sync.RWMutex
+	devices    = make(map[string]*Device)
+	mu         sync.RWMutex
+	mqttClient mqtt.Client
 )
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
@@ -47,9 +51,8 @@ func onMessageReceived(client mqtt.Client, message mqtt.Message) {
 	id := parts[1]
 	category := parts[2]
 
-	fmt.Println(parts)
-
 	mu.Lock()
+	defer mu.Unlock()
 	device, ok := devices[id]
 	if !ok {
 		device = &Device{DeviceID: id}
@@ -75,12 +78,27 @@ func onMessageReceived(client mqtt.Client, message mqtt.Message) {
 		if err := json.Unmarshal(message.Payload(), &info); err == nil {
 			device.MAC, device.IP, device.SSID = info.MAC, info.IP, info.SSID
 		}
+
+	case "state":
+		if len(parts) < 4 {
+			return
+		}
+		component := parts[3]
+
+		var s struct {
+			Status int `json:"status"`
+		}
+		if err := json.Unmarshal(message.Payload(), &s); err == nil {
+			if device.States == nil {
+				device.States = make(map[string]int)
+			}
+			device.States[component] = s.Status
+		}
 	}
 
-	mu.Unlock()
 }
 
-func devicesHandler(w http.ResponseWriter, r *http.Request) {
+func getDevicesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	mu.RLock()
@@ -93,6 +111,18 @@ func devicesHandler(w http.ResponseWriter, r *http.Request) {
 	mu.RUnlock()
 
 	json.NewEncoder(w).Encode(devicesArr)
+}
+
+func sendCommandsHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	component := r.PathValue("component")
+
+	body, _ := io.ReadAll(r.Body)
+
+	topic := fmt.Sprintf("devices/%s/command/%s", id, component)
+	token := mqttClient.Publish(topic, 1, false, body)
+	token.Wait()
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func cors(next http.Handler) http.Handler {
@@ -117,13 +147,14 @@ func main() {
 	opts.OnConnect = connectHandler
 	opts.OnConnectionLost = connectLostHandler
 
-	client := mqtt.NewClient(opts)
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
+	mqttClient = mqtt.NewClient(opts)
+	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/devices", devicesHandler)
+	mux.HandleFunc("/api/devices", getDevicesHandler)
+	mux.HandleFunc("POST /api/devices/{id}/command/{component}", sendCommandsHandler)
 
 	fmt.Println("SERVER :8080...")
 

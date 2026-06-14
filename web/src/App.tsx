@@ -1,46 +1,48 @@
-import { useEffect, useState } from 'react'
-import { DeviceCard } from './components/DeviceCard'
-import { Masthead } from './components/Masthead'
-import { Ruler } from './components/Ruler'
-import type { Device } from './types'
-import styles from './App.module.css'
-
-const API = 'http://localhost:8080/api/devices'
+import { useCallback, useEffect, useState } from "react";
+import { DeviceCard } from "./components/DeviceCard";
+import { Masthead } from "./components/Masthead";
+import { Ruler } from "./components/Ruler";
+import { getDevices, sendCommand } from "./lib/api";
+import type { Device } from "./types";
+import styles from "./App.module.css";
 
 export default function App() {
-  const [devices, setDevices] = useState<Device[]>([])
-  const [serverOnline, setServerOnline] = useState(false)
-  const [lastSync, setLastSync] = useState<Date | null>(null)
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [serverOnline, setServerOnline] = useState(false);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+
+  const refresh = useCallback(async () => {
+    try {
+      const data = await getDevices();
+      setDevices(data);
+      setServerOnline(true);
+      setLastSync(new Date());
+    } catch {
+      setServerOnline(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let active = true
+    refresh();
+    const id = setInterval(refresh, 2000);
+    return () => clearInterval(id);
+  }, [refresh]);
 
-    async function load() {
+  const handleToggle = useCallback(
+    async (id: string, component: string, value: number) => {
       try {
-        const res = await fetch(API)
-        if (!res.ok) throw new Error(String(res.status))
-        const data: Device[] = await res.json()
-        if (!active) return
-        setDevices(data)
-        setServerOnline(true)
-        setLastSync(new Date())
+        await sendCommand(id, component, value);
       } catch {
-        if (active) setServerOnline(false)
+        /* command failed — optimistic reverts on next poll */
       }
-    }
-
-    load()
-    const id = setInterval(load, 2000)
-    return () => {
-      active = false
-      clearInterval(id)
-    }
-  }, [])
+    },
+    [],
+  );
 
   const sorted = [...devices].sort((a, b) =>
     a.device_id.localeCompare(b.device_id),
-  )
-  const onlineCount = devices.filter((d) => d.online).length
+  );
+  const onlineCount = devices.filter((d) => d.online).length;
 
   return (
     <>
@@ -51,17 +53,22 @@ export default function App() {
 
         {sorted.length === 0 ? (
           <div className={styles.void}>
-            <span className={styles.voidMark} />
-            {serverOnline ? 'NO NODES BROADCASTING' : 'AWAITING SERVER LINK'}
+            <span className={styles.void_mark} />
+            {serverOnline ? "NO NODES BROADCASTING" : "AWAITING SERVER LINK"}
           </div>
         ) : (
           <main className={styles.rack}>
             {sorted.map((d, i) => (
-              <DeviceCard key={d.device_id} device={d} index={i} />
+              <DeviceCard
+                key={d.device_id}
+                device={d}
+                index={i}
+                onToggle={handleToggle}
+              />
             ))}
           </main>
         )}
       </div>
     </>
-  )
+  );
 }

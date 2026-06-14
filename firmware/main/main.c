@@ -6,9 +6,11 @@
 #include "esp_mac.h"
 #include "esp_netif.h"
 #include "esp_wifi.h"
+#include "hal/gpio_types.h"
 #include "mqtt_client.h"
 #include "nvs_flash.h"
 #include "sdkconfig.h"
+#include "soc/gpio_num.h"
 #include <stdint.h>
 
 static const char *TAG = "main";
@@ -36,7 +38,7 @@ void get_device_id(char *device_id, size_t size) {
            mac[2], mac[3], mac[4], mac[5]);
 }
 
-void create_device_status_json(char *status_str, int status) {
+void create_status_json(char *status_str, int status) {
   cJSON *status_root = cJSON_CreateObject();
   cJSON_AddNumberToObject(status_root, "status", status);
   char *json = cJSON_PrintUnformatted(status_root);
@@ -56,7 +58,7 @@ void mqtt_event_handler(void *event_handler_arg, esp_event_base_t event_base,
     ESP_LOGI("MQTT", "Connected to broker");
 
     char status_json[64];
-    create_device_status_json(status_json, 1);
+    create_status_json(status_json, 1);
 
     char status_topic[64];
     snprintf(status_topic, sizeof(status_topic), "devices/%s/status",
@@ -82,6 +84,10 @@ void mqtt_event_handler(void *event_handler_arg, esp_event_base_t event_base,
     free(json);
     cJSON_Delete(root);
 
+    char cmd_topic[64];
+    snprintf(cmd_topic, sizeof(cmd_topic), "devices/%s/command/+", device_id);
+    esp_mqtt_client_subscribe(mqtt_client_handle, cmd_topic, 1);
+
   } break;
 
   case MQTT_EVENT_DISCONNECTED: {
@@ -90,6 +96,37 @@ void mqtt_event_handler(void *event_handler_arg, esp_event_base_t event_base,
 
   case MQTT_EVENT_DATA: {
     ESP_LOGI("MQTT", "data received: %.*s", event->data_len, event->data);
+    char onboard_led_command[64];
+    snprintf(onboard_led_command, sizeof(onboard_led_command),
+             "devices/%s/command/onboard_led", device_id);
+
+    if (event->topic_len == strlen(onboard_led_command) &&
+        strncmp(event->topic, onboard_led_command, event->topic_len) == 0) {
+
+      cJSON *json = cJSON_ParseWithLength(event->data, event->data_len);
+      if (json) {
+        cJSON *status = cJSON_GetObjectItem(json, "status");
+
+        if (cJSON_IsNumber(status)) {
+          int status_value = status->valueint;
+          char state_topic[64];
+
+          gpio_set_level(GPIO_NUM_2, status_value);
+
+          char state_json[64];
+          create_status_json(state_json, status_value);
+
+          snprintf(state_topic, sizeof(state_topic),
+                   "devices/%s/state/onboard_led", device_id);
+
+          esp_mqtt_client_publish(mqtt_client_handle, state_topic, state_json,
+                                  0, 1, 1);
+        }
+
+        cJSON_Delete(json);
+      }
+    }
+
   } break;
 
   default:
@@ -99,7 +136,10 @@ void mqtt_event_handler(void *event_handler_arg, esp_event_base_t event_base,
 
 void setup_mqtt() {
   char status_json[64];
-  create_device_status_json(status_json, 0);
+  create_status_json(status_json, 0);
+
+  gpio_reset_pin(GPIO_NUM_2);
+  gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
 
   char status_topic[64];
   snprintf(status_topic, sizeof(status_topic), "devices/%s/status", device_id);
@@ -175,7 +215,4 @@ void app_main(void) {
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
   ESP_ERROR_CHECK(esp_wifi_start());
-
-  gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
-  gpio_set_level(GPIO_NUM_2, 1);
 };

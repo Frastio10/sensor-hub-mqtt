@@ -4,4 +4,5 @@ export type Device = {
   ip: string
   ssid: string
   online: boolean
+  states: Record<string, number> | null
 }

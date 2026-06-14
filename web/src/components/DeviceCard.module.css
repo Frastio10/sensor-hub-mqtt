@@ -114,6 +114,58 @@
   word-break: break-all;
 }
 
+.control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.control_label {
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+.toggle {
+  position: relative;
+  width: 44px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--line-2);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 14px;
+  background: var(--muted);
+  transition: left 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.18s ease;
+}
+
+.toggle_on {
+  border-color: var(--signal);
+  background: rgba(255, 90, 38, 0.12);
+}
+
+.toggle_on .knob {
+  left: 26px;
+  background: var(--signal);
+  box-shadow: 0 0 8px var(--signal);
+}
+
+.toggle:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 .offline {
   opacity: 0.5;
 }
