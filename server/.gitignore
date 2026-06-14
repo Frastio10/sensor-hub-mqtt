@@ -2,4 +2,5 @@ server
 *.exe
 *.test
 *.out
+tmp/
 .DS_Store
