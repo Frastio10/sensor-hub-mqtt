@@ -15,6 +15,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define POT_ADC_UNIT CONFIG_POT_ADC_UNIT
+#define POT_ADC_CHANNEL CONFIG_POT_ADC_CHANNEL
+
 static const char *TAG = "main";
 
 static char device_id[32];
@@ -44,7 +47,7 @@ static void led_init() {
 void adc_task(void *pvParameters) {
   adc_oneshot_unit_handle_t adc_handle;
   const adc_oneshot_unit_init_cfg_t adc_init_cfg = {
-      .unit_id = ADC_UNIT_1,
+      .unit_id = POT_ADC_UNIT,
   };
   ESP_ERROR_CHECK(adc_oneshot_new_unit(&adc_init_cfg, &adc_handle));
 
@@ -53,7 +56,7 @@ void adc_task(void *pvParameters) {
       .atten = ADC_ATTEN_DB_12,
   };
   ESP_ERROR_CHECK(
-      adc_oneshot_config_channel(adc_handle, ADC_CHANNEL_6, &config));
+      adc_oneshot_config_channel(adc_handle, POT_ADC_CHANNEL, &config));
 
   int pot_value = 0;
 
@@ -63,7 +66,7 @@ void adc_task(void *pvParameters) {
   char json[64];
 
   while (1) {
-    ESP_ERROR_CHECK(adc_oneshot_read(adc_handle, ADC_CHANNEL_6, &pot_value));
+    ESP_ERROR_CHECK(adc_oneshot_read(adc_handle, POT_ADC_CHANNEL, &pot_value));
     ESP_LOGI(TAG, "Potentiometer Value: %d", pot_value);
 
     create_value_json(json, pot_value);

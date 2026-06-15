@@ -16,3 +16,12 @@ menu "MQTT Configuration"
         help
             Full URI of the MQTT broker the device connects to.
 endmenu
+
+menu "Sensor Configuration"
+    config POT_ADC_UNIT
+        int "Pot ADC unit (0 = ADC1, 1 = ADC2)"
+        default 0
+    config POT_ADC_CHANNEL
+        int "Pot ADC channel"
+        default 6
+endmenu
