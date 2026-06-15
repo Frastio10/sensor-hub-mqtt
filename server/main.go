@@ -24,7 +24,8 @@ type Device struct {
 	SSID     string `json:"ssid"`
 	Online   bool   `json:"online"`
 
-	States map[string]int `json:"states"`
+	States    map[string]int `json:"states"`
+	Telemetry map[string]int `json:"telemetry"`
 }
 
 var (
@@ -94,6 +95,21 @@ func onMessageReceived(client mqtt.Client, message mqtt.Message) {
 			}
 			device.States[component] = s.Status
 		}
+
+	case "telemetry":
+		component := parts[3]
+
+		var v struct {
+			Value int `json:"value"`
+		}
+
+		if err := json.Unmarshal(message.Payload(), &v); err == nil {
+			if device.Telemetry == nil {
+				device.Telemetry = make(map[string]int)
+			}
+			device.Telemetry[component] = v.Value
+		}
+		println("")
 	}
 
 }

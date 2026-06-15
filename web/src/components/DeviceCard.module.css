@@ -114,6 +114,47 @@
   word-break: break-all;
 }
 
+.telemetry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.tele_head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-family: var(--mono);
+}
+
+.tele_label {
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+.tele_val {
+  font-size: 0.9rem;
+  color: var(--signal);
+}
+
+.tele_bar {
+  height: 6px;
+  margin-top: 5px;
+  background: #101319;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.tele_bar > div {
+  height: 100%;
+  background: linear-gradient(90deg, #3a1a0e, var(--signal));
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
 .control {
   display: flex;
   align-items: center;

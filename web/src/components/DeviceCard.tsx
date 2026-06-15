@@ -47,6 +47,14 @@ export function DeviceCard({ device, index, onToggle }: Props) {
         <Row k="MAC" v={device.mac} />
       </dl>
 
+      {device.telemetry && Object.keys(device.telemetry).length > 0 && (
+        <div className={styles.telemetry}>
+          {Object.entries(device.telemetry).map(([metric, value]) => (
+            <TelemetryRow key={metric} label={metric} value={value} />
+          ))}
+        </div>
+      )}
+
       <div className={styles.control}>
         <span className={styles.control_label}>ONBOARD LED</span>
         <button
@@ -60,6 +68,21 @@ export function DeviceCard({ device, index, onToggle }: Props) {
         </button>
       </div>
     </article>
+  )
+}
+
+function TelemetryRow({ label, value }: { label: string; value: number }) {
+  const pct = Math.min(100, (value / 4095) * 100)
+  return (
+    <div className={styles.tele}>
+      <div className={styles.tele_head}>
+        <span className={styles.tele_label}>{label.toUpperCase()}</span>
+        <span className={styles.tele_val}>{value}</span>
+      </div>
+      <div className={styles.tele_bar}>
+        <div style={{ width: `${pct}%` }} />
+      </div>
+    </div>
   )
 }
 

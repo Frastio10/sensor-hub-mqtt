@@ -5,4 +5,5 @@ export type Device = {
   ssid: string
   online: boolean
   states: Record<string, number> | null
+  telemetry: Record<string, number> | null
 }
