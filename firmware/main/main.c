@@ -44,34 +44,45 @@ static void led_init() {
   gpio_set_direction(GPIO_NUM_2, GPIO_MODE_OUTPUT);
 }
 
+typedef struct {
+  adc_channel_t channel;
+  const char *metric;
+} adc_sensor_t;
+
+static const adc_sensor_t sensors[] = {
+    {POT_ADC_CHANNEL, "pot"},
+    {ADC_CHANNEL_7, "light"},
+};
+
 void adc_task(void *pvParameters) {
   adc_oneshot_unit_handle_t adc_handle;
   const adc_oneshot_unit_init_cfg_t adc_init_cfg = {
       .unit_id = POT_ADC_UNIT,
   };
+
   ESP_ERROR_CHECK(adc_oneshot_new_unit(&adc_init_cfg, &adc_handle));
 
   adc_oneshot_chan_cfg_t config = {
       .bitwidth = ADC_BITWIDTH_12,
       .atten = ADC_ATTEN_DB_12,
   };
-  ESP_ERROR_CHECK(
-      adc_oneshot_config_channel(adc_handle, POT_ADC_CHANNEL, &config));
 
-  int pot_value = 0;
+  int n = sizeof(sensors) / sizeof(sensors[0]);
+  for (int i = 0; i < n; i++) {
+    ESP_ERROR_CHECK(
+        adc_oneshot_config_channel(adc_handle, sensors[i].channel, &config));
+  }
 
-  char topic[64];
-  snprintf(topic, sizeof(topic), "devices/%s/telemetry/pot", device_id);
-
-  char json[64];
-
+  char topic[64], json[64];
   while (1) {
-    ESP_ERROR_CHECK(adc_oneshot_read(adc_handle, POT_ADC_CHANNEL, &pot_value));
-    ESP_LOGI(TAG, "Potentiometer Value: %d", pot_value);
-
-    create_value_json(json, pot_value);
-    mqtt_publish(topic, json, 0, 0, 0);
-
+    for (int i = 0; i < n; i++) {
+      int v = 0;
+      ESP_ERROR_CHECK(adc_oneshot_read(adc_handle, sensors[i].channel, &v));
+      snprintf(topic, sizeof(topic), "devices/%s/telemetry/%s", device_id,
+               sensors[i].metric);
+      create_value_json(json, v);
+      mqtt_publish(topic, json, 0, 0, 0);
+    }
     vTaskDelay(pdMS_TO_TICKS(500));
   }
 }
